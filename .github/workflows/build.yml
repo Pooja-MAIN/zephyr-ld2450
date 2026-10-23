@@ -65,8 +65,18 @@ jobs:
           sudo apt-get install -y -qq libsdl2-2.0-0 libslirp0 libpixman-1-0 libgcrypt20
           mkdir -p qemu && curl -sSL "$QEMU_URL" | tar -xJ -C qemu
           QEMU_BIN=$(find qemu -type f -name qemu-system-xtensa | head -n1)
+          set -o pipefail
+          { echo "qemu: $QEMU_BIN"; echo "address: $(cat firmware/flash-address.txt)"; } | tee qemu.log
           python3 zephyr-ld2450/tests/qemu/run_esp32s3_qemu.py --qemu "$QEMU_BIN" \
-            --bin firmware/ld2450-esp32s3.bin --address "$(cat firmware/flash-address.txt)"
+            --bin firmware/ld2450-esp32s3.bin --address "$(cat firmware/flash-address.txt)" \
+            2>&1 | tee -a qemu.log
+
+      - name: Publish QEMU log
+        if: always()
+        run: |
+          if [ -f qemu.log ]; then
+            { echo '### QEMU console'; echo '```'; tail -n 80 qemu.log; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          fi
 
       - name: Upload firmware
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
