@@ -3,43 +3,44 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <math.h>
 #include <stdio.h>
 #include <zephyr/device.h>
 #include <zephyr/drivers/sensor.h>
 #include <zephyr/drivers/sensor/ld2450.h>
 #include <zephyr/kernel.h>
 
-#define RAD_TO_DEG (180.0 / 3.14159265358979323846)
-
 static const struct device *const radar = DEVICE_DT_GET_ONE(hilink_ld2450);
+
+static int get_mm(enum sensor_channel chan, int *mm)
+{
+	struct sensor_value val;
+	int rc = sensor_channel_get(radar, chan, &val);
+
+	if (rc == 0) {
+		*mm = (int)sensor_value_to_milli(&val);
+	}
+	return rc;
+}
 
 static void print_target(int index)
 {
-	struct sensor_value x;
-	struct sensor_value y;
-	struct sensor_value speed;
-	double x_m;
-	double y_m;
+	int x;
+	int y;
+	int speed;
 
-	if ((sensor_channel_get(radar, SENSOR_CHAN_LD2450_TARGET_X(index), &x) != 0) ||
-	    (sensor_channel_get(radar, SENSOR_CHAN_LD2450_TARGET_Y(index), &y) != 0) ||
-	    (sensor_channel_get(radar, SENSOR_CHAN_LD2450_TARGET_SPEED(index), &speed) != 0)) {
+	if ((get_mm(SENSOR_CHAN_LD2450_TARGET_X(index), &x) != 0) ||
+	    (get_mm(SENSOR_CHAN_LD2450_TARGET_Y(index), &y) != 0) ||
+	    (get_mm(SENSOR_CHAN_LD2450_TARGET_SPEED(index), &speed) != 0)) {
 		return;
 	}
 
-	x_m = sensor_value_to_double(&x);
-	y_m = sensor_value_to_double(&y);
-
-	printf("  target %d: x=%6.3f m  y=%6.3f m  range=%6.3f m  azimuth=%6.1f deg  "
-	       "speed=%6.2f m/s\n",
-	       index + 1, x_m, y_m, sqrt((x_m * x_m) + (y_m * y_m)), atan2(x_m, y_m) * RAD_TO_DEG,
-	       sensor_value_to_double(&speed));
+	printf("  target %d: x=%d mm  y=%d mm  speed=%d mm/s\n", index + 1, x, y, speed);
 }
 
 int main(void)
 {
 	struct sensor_value count;
+	int nearest;
 	int rc;
 
 	if (!device_is_ready(radar)) {
@@ -57,6 +58,10 @@ int main(void)
 
 		sensor_channel_get(radar, (enum sensor_channel)SENSOR_CHAN_LD2450_TARGET_COUNT, &count);
 		printf("targets: %d\n", count.val1);
+
+		if (get_mm(SENSOR_CHAN_DISTANCE, &nearest) == 0) {
+			printf("  nearest: %d mm\n", nearest);
+		}
 
 		for (int i = 0; i < LD2450_TARGET_COUNT_MAX; i++) {
 			print_target(i);

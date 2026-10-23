@@ -64,7 +64,9 @@ Every push to GitHub runs `.github/workflows/build.yml`, which:
 2. Runs the Zephyr driver tests on `native_sim`, feeding simulated radar
    frames through an emulated UART.
 3. Builds the demo for the ESP32-S3 DevKitC.
-4. Uploads the firmware as an artifact named `ld2450-esp32s3-firmware`.
+4. Boots that firmware in Espressif's QEMU with a simulated LD2450 on UART1
+   and checks the console output.
+5. Uploads the firmware as an artifact named `ld2450-esp32s3-firmware`.
 
 To get the firmware, open the repository's **Actions** tab, select the latest
 successful run, and download the artifact. It contains `ld2450-esp32s3.bin`
@@ -85,11 +87,12 @@ Expected output with one person in front of the sensor:
 
 ```text
 targets: 1
-  target 1: x=-0.782 m  y= 1.713 m  range= 1.883 m  azimuth= -24.5 deg  speed= -0.16 m/s
+  nearest: 1883 mm
+  target 1: x=-782 mm  y=1713 mm  speed=-160 mm/s
 ```
 
-The sign of X, and therefore of the azimuth, follows the sensor's own axis.
-Confirm which side is positive by walking left and right in front of it.
+The sign of X follows the sensor's own axis. Confirm which side is positive
+by walking left and right in front of it.
 
 ## Build locally (optional)
 
@@ -120,7 +123,7 @@ west flash
      `add_subdirectory(hilink)` to `drivers/sensor/CMakeLists.txt`, both in
      alphabetical order.
    - Delete the root `CMakeLists.txt`, `Kconfig`, `west.yml`,
-     `zephyr/module.yml`, `.github/`, and `tests/host/`.
+     `zephyr/module.yml`, `.github/`, `tests/host/`, and `tests/qemu/`.
    - Add a `README.rst` for the sample, following other sensor samples.
    - Add the device to `tests/drivers/build_all/sensor/uart.dtsi`.
 4. Split the work into commits: vendor prefix, driver and binding, sample.

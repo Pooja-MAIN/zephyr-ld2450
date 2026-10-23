@@ -21,10 +21,8 @@ FRAME_ONE_TARGET = bytes(
 )
 FRAME_EMPTY = bytes([0xAA, 0xFF, 0x03, 0x00] + [0x00] * 24 + [0x55, 0xCC])
 
-EXPECT_ONE = re.compile(
-    r"target 1: x=\s*-0\.782 m\s+y=\s*1\.713 m\s+range=\s*1\.883 m\s+"
-    r"azimuth=\s*-24\.5 deg\s+speed=\s*-0\.16 m/s"
-)
+EXPECT_ONE = re.compile(r"target 1: x=-782 mm\s+y=1713 mm\s+speed=-160 mm/s")
+EXPECT_NEAREST = re.compile(r"nearest: 1883 mm")
 
 
 def make_flash(app_bin, address, out):
@@ -89,7 +87,8 @@ def main():
     threading.Thread(target=reader, daemon=True).start()
 
     # Phase 1: one target must be decoded exactly; phase 2: it must disappear.
-    phases = [(FRAME_ONE_TARGET, EXPECT_ONE, "one target"),
+    phases = [(FRAME_ONE_TARGET, EXPECT_NEAREST, "nearest distance"),
+              (FRAME_ONE_TARGET, EXPECT_ONE, "one target"),
               (FRAME_EMPTY, re.compile(r"^targets: 0$"), "no targets")]
     deadline = time.monotonic() + args.timeout
     ok = True
