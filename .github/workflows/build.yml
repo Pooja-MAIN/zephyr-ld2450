@@ -76,6 +76,7 @@ jobs:
         run: |
           if [ -f qemu.log ]; then
             { echo '### QEMU console'; echo '```'; tail -n 80 qemu.log; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+            echo "::notice title=QEMU console::$(tail -n 60 qemu.log | sed 's/%/%25/g' | sed ':a;N;$!ba;s/\n/%0A/g')"
           fi
 
       - name: Upload firmware
