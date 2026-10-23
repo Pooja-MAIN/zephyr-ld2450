@@ -45,32 +45,48 @@ def main():
     flash = "qemu-flash.bin"
     make_flash(args.bin, int(args.address, 0), flash)
 
-    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    server.bind(("127.0.0.1", 0))
-    server.listen(1)
-    port = server.getsockname()[1]
+    def listener():
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        s.bind(("127.0.0.1", 0))
+        s.listen(1)
+        s.settimeout(30)
+        return s
 
+    console_server = listener()
+    radar_server = listener()
+
+    # UART0 is the console, UART1 is wired to the simulated LD2450.
     qemu = subprocess.Popen(
         [args.qemu, "-machine", "esp32s3", "-display", "none",
          "-drive", f"file={flash},if=mtd,format=raw",
-         "-serial", "stdio",
-         "-serial", f"tcp:127.0.0.1:{port}"],
-        stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+         "-serial", f"tcp:127.0.0.1:{console_server.getsockname()[1]}",
+         "-serial", f"tcp:127.0.0.1:{radar_server.getsockname()[1]}"],
+        stdin=subprocess.DEVNULL,
     )
+
+    console, _ = console_server.accept()
+    radar, _ = radar_server.accept()
 
     lines = queue.Queue()
 
     def reader():
-        for raw in qemu.stdout:
-            line = raw.decode(errors="replace").rstrip()
-            print(f"[esp32s3] {line}", flush=True)
-            lines.put(line)
+        pending = b""
+        while True:
+            try:
+                chunk = console.recv(4096)
+            except OSError:
+                return
+            if not chunk:
+                return
+            pending += chunk
+            while b"\n" in pending:
+                raw, pending = pending.split(b"\n", 1)
+                line = raw.decode(errors="replace").rstrip()
+                print(f"[esp32s3] {line}", flush=True)
+                lines.put(line)
 
     threading.Thread(target=reader, daemon=True).start()
-
-    server.settimeout(30)
-    radar, _ = server.accept()
 
     # Phase 1: one target must be decoded exactly; phase 2: it must disappear.
     phases = [(FRAME_ONE_TARGET, EXPECT_ONE, "one target"),
@@ -99,6 +115,7 @@ def main():
     radar.close()
     qemu.kill()
     qemu.wait()
+    console.close()
     return 0 if ok else 1
 
 
