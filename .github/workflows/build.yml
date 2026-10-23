@@ -66,7 +66,7 @@ jobs:
           mkdir -p qemu && curl -sSL "$QEMU_URL" | tar -xJ -C qemu
           QEMU_BIN=$(find qemu -type f -name qemu-system-xtensa | head -n1)
           set -o pipefail
-          { echo "qemu: $QEMU_BIN"; echo "address: $(cat firmware/flash-address.txt)"; } | tee qemu.log
+          { echo "qemu: $QEMU_BIN"; echo "address: $(cat firmware/flash-address.txt)"; grep -E '^CONFIG_FPU' build-esp32s3/zephyr/.config || echo 'FPU not enabled'; } | tee qemu.log
           python3 zephyr-ld2450/tests/qemu/run_esp32s3_qemu.py --qemu "$QEMU_BIN" \
             --bin firmware/ld2450-esp32s3.bin --address "$(cat firmware/flash-address.txt)" \
             2>&1 | tee -a qemu.log
