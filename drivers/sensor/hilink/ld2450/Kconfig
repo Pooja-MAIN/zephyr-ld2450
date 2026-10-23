@@ -1,0 +1,18 @@
+# SPDX-FileCopyrightText: Copyright The Zephyr Project Contributors
+# SPDX-License-Identifier: Apache-2.0
+
+config LD2450
+	bool "Hi-Link LD2450 24GHz multi-target tracking radar"
+	default y
+	depends on DT_HAS_HILINK_LD2450_ENABLED
+	depends on UART_INTERRUPT_DRIVEN
+	help
+	  Enable driver for the Hi-Link LD2450 UART radar, which reports the
+	  position and speed of up to three targets.
+
+config LD2450_UART_TIMEOUT_MS
+	int "Report frame timeout in milliseconds"
+	default 300
+	depends on LD2450
+	help
+	  Maximum time sample_fetch() waits for the next complete report frame.

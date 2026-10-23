@@ -1,0 +1,6 @@
+name: ld2450
+build:
+  cmake: .
+  kconfig: Kconfig
+  settings:
+    dts_root: .

@@ -1,0 +1,23 @@
+# SPDX-FileCopyrightText: Copyright The Zephyr Project Contributors
+# SPDX-License-Identifier: Apache-2.0
+
+description: |
+  Hi-Link LD2450 24 GHz mmWave multi-target tracking radar.
+
+  The sensor reports the position and speed of up to three targets over
+  UART. Its factory default baud rate is 256000.
+
+  Example:
+
+    &uart1 {
+      status = "okay";
+      current-speed = <256000>;
+
+      ld2450: ld2450 {
+        compatible = "hilink,ld2450";
+      };
+    };
+
+compatible: "hilink,ld2450"
+
+include: [sensor-device.yaml, uart-device.yaml]

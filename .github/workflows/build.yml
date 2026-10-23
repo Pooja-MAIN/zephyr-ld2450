@@ -1,0 +1,64 @@
+name: Build and test
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: zephyr-ld2450
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: 3.12
+
+      - name: Set up Zephyr
+        uses: zephyrproject-rtos/action-zephyr-setup@be8136a8bba01580485d98b7ad2d32477c36a49a # v1.0.15
+        with:
+          app-path: zephyr-ld2450
+          toolchains: xtensa-espressif_esp32s3_zephyr-elf
+
+      - name: Fetch Espressif binary blobs
+        run: west blobs fetch hal_espressif
+
+      - name: Host unit tests
+        working-directory: zephyr-ld2450/tests/host
+        run: |
+          gcc -std=c99 -Wall -Wextra -Werror -I../../drivers/sensor/hilink/ld2450 \
+            test_ld2450_protocol.c -o test_ld2450_protocol
+          ./test_ld2450_protocol
+
+      - name: Zephyr driver tests and sample build (Twister)
+        working-directory: zephyr-ld2450
+        run: west twister -T tests -T samples --integration -v --inline-logs
+
+      - name: Build ESP32-S3 firmware
+        run: |
+          west build -p -b esp32s3_devkitc/esp32s3/procpu -d build-esp32s3 \
+            zephyr-ld2450/samples/sensor/ld2450
+          ADDR=$(grep -oE -- '--esp-app-address=0x[0-9a-fA-F]+' build-esp32s3/zephyr/runners.yaml \
+            | head -n1 | cut -d= -f2 || true)
+          if [ -z "$ADDR" ]; then
+            ADDR=$(grep -E '^CONFIG_FLASH_LOAD_OFFSET=' build-esp32s3/zephyr/.config | cut -d= -f2)
+          fi
+          mkdir -p firmware
+          cp build-esp32s3/zephyr/zephyr.bin firmware/ld2450-esp32s3.bin
+          echo "$ADDR" > firmware/flash-address.txt
+          echo "Flash firmware/ld2450-esp32s3.bin at address $ADDR" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload firmware
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ld2450-esp32s3-firmware
+          path: firmware/

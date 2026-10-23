@@ -1,0 +1,17 @@
+/*
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * LD2450 on UART1: sensor TX -> GPIO18 (RX), sensor RX -> GPIO17 (TX).
+ */
+
+&uart1 {
+	status = "okay";
+	current-speed = <256000>;
+	pinctrl-0 = <&uart1_default>;
+	pinctrl-names = "default";
+
+	ld2450: ld2450 {
+		compatible = "hilink,ld2450";
+		status = "okay";
+	};
+};

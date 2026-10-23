@@ -1,0 +1,18 @@
+sample:
+  name: LD2450 multi-target radar sample
+common:
+  tags: sensors
+  platform_allow: esp32s3_devkitc/esp32s3/procpu
+  integration_platforms:
+    - esp32s3_devkitc/esp32s3/procpu
+  filter: dt_compat_enabled("hilink,ld2450")
+tests:
+  sample.sensor.ld2450.build:
+    build_only: true
+  sample.sensor.ld2450:
+    harness: console
+    harness_config:
+      fixture: fixture_ld2450
+      type: one_line
+      regex:
+        - "targets: [0-3]"

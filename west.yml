@@ -1,0 +1,17 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# West manifest: this repository is the manifest, so Zephyr picks it up as a
+# module automatically. Only the modules needed here are fetched.
+
+manifest:
+  remotes:
+    - name: zephyrproject-rtos
+      url-base: https://github.com/zephyrproject-rtos
+
+  projects:
+    - name: zephyr
+      remote: zephyrproject-rtos
+      revision: main
+      import:
+        name-allowlist:
+          - hal_espressif

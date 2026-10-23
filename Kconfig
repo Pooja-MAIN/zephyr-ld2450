@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Out-of-tree module glue. Upstream, the driver is sourced from
+# drivers/sensor/Kconfig instead.
+if SENSOR
+rsource "drivers/sensor/hilink/Kconfig"
+endif

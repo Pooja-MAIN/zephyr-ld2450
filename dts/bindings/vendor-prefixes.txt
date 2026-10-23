@@ -1,0 +1,3 @@
+# Out-of-tree only. Upstream, add this line to Zephyr's
+# dts/bindings/vendor-prefixes.txt in alphabetical order instead.
+hilink	Shenzhen Hi-Link Electronic Co., Ltd.
